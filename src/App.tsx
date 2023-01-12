@@ -20,14 +20,16 @@ export function App() {
   )
 
   const loadAllTransactions = useCallback(async () => {
-    setIsLoading(true)
     transactionsByEmployeeUtils.invalidateData()
 
-    await employeeUtils.fetchAll()
     await paginatedTransactionsUtils.fetchAll()
+  }, [paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
+  const loadAllEmployees = useCallback(async () => {
+    setIsLoading(true)
+    await employeeUtils.fetchAll()
     setIsLoading(false)
-  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
+  }, [employeeUtils, setIsLoading])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
@@ -40,8 +42,14 @@ export function App() {
   useEffect(() => {
     if (employees === null && !employeeUtils.loading) {
       loadAllTransactions()
+      loadAllEmployees()
     }
-  }, [employeeUtils.loading, employees, loadAllTransactions])
+  }, [employeeUtils.loading, employees, loadAllEmployees, loadAllTransactions])
+
+  useEffect(() => {
+    console.log("transactions:")
+    console.log(paginatedTransactionsUtils)
+  }, [transactions])
 
   return (
     <Fragment>
@@ -61,7 +69,13 @@ export function App() {
             label: `${item.firstName} ${item.lastName}`,
           })}
           onChange={async (newValue) => {
+            console.log(newValue)
             if (newValue === null) {
+              return
+            }
+
+            if (newValue.id === "") {
+              await loadAllTransactions()
               return
             }
 
@@ -74,7 +88,7 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {paginatedTransactions?.nextPage && (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
